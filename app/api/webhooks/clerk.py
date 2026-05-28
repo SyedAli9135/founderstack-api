@@ -21,7 +21,7 @@ async def clerk_webhook(
     """
     Handles incoming webhooks from Clerk to synchronize Organization and User data.
     """
-    wh_secret = settings.CLERK_WEBHOOK_SECRET
+    wh_secret = settings.CLERK_WEBHOOK_SECRET.get_secret_value()
     if not wh_secret:
         logger.error("CLERK_WEBHOOK_SECRET is not set")
         raise HTTPException(

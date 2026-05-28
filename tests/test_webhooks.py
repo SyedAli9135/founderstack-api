@@ -1,5 +1,6 @@
 import pytest
 from svix.webhooks import Webhook
+from pydantic import SecretStr
 from datetime import datetime, timezone
 import json
 import uuid
@@ -11,9 +12,8 @@ from app.config import settings
 @pytest.mark.asyncio
 async def test_clerk_webhook_org_created(client, db_session):
     """Test that a valid organization.created webhook successfully inserts a record."""
-    # valid base64 secret after 'whsec_'
     # Use secret from settings (.env) or a fallback for testing
-    secret = settings.CLERK_WEBHOOK_SECRET or "whsec_test_secret_fallback"
+    secret = settings.CLERK_WEBHOOK_SECRET.get_secret_value() if settings.CLERK_WEBHOOK_SECRET else "whsec_test_secret_fallback"
 
     payload = {
         "type": "organization.created",
@@ -54,7 +54,7 @@ async def test_clerk_webhook_org_created(client, db_session):
 async def test_clerk_webhook_race_condition(client):
     """Test that membership creation fails with 422 if the organization doesn't exist yet."""
     # Use secret from settings
-    secret = settings.CLERK_WEBHOOK_SECRET or "whsec_test_secret_fallback"
+    secret = settings.CLERK_WEBHOOK_SECRET.get_secret_value() if settings.CLERK_WEBHOOK_SECRET else "whsec_test_secret_fallback"
 
     payload = {
         "type": "organizationMembership.created",
@@ -87,9 +87,9 @@ async def test_clerk_webhook_race_condition(client):
 
 
 @pytest.mark.asyncio
-async def test_clerk_webhook_invalid_signature(client):
+async def test_clerk_webhook_invalid_signature(client, monkeypatch):
     """Test that the webhook handler rejects invalid svix signatures."""
-    settings.CLERK_WEBHOOK_SECRET = "whsec_valid_secret"
+    monkeypatch.setattr(settings, "CLERK_WEBHOOK_SECRET", SecretStr("whsec_valid_secret"))
 
     payload = {"type": "test.event", "data": {}}
     payload_str = json.dumps(payload, separators=(',', ':'))
@@ -121,7 +121,7 @@ async def test_clerk_webhook_user_updated(client, db_session):
     ))
     await db_session.commit()
 
-    secret = settings.CLERK_WEBHOOK_SECRET or "whsec_MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0"
+    secret = settings.CLERK_WEBHOOK_SECRET.get_secret_value() if settings.CLERK_WEBHOOK_SECRET else "whsec_MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0"
     
     payload = {
         "type": "user.updated",
@@ -157,7 +157,7 @@ async def test_clerk_webhook_org_deleted(client, db_session):
     await db_session.execute(insert(Organization).values(clerk_org_id="org_del", name="Del Org", slug="del-org"))
     await db_session.commit()
 
-    secret = settings.CLERK_WEBHOOK_SECRET or "whsec_MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0"
+    secret = settings.CLERK_WEBHOOK_SECRET.get_secret_value() if settings.CLERK_WEBHOOK_SECRET else "whsec_MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0"
 
     payload = {"type": "organization.deleted", "data": {"id": "org_del"}}
     payload_str = json.dumps(payload, separators=(',', ':'))
@@ -185,7 +185,7 @@ async def test_clerk_webhook_membership_deleted(client, db_session):
     await db_session.execute(insert(User).values(org_id=org_id, clerk_user_id="user_mem_del", email="del@test.com", full_name="Del Me"))
     await db_session.commit()
 
-    secret = settings.CLERK_WEBHOOK_SECRET or "whsec_MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0"
+    secret = settings.CLERK_WEBHOOK_SECRET.get_secret_value() if settings.CLERK_WEBHOOK_SECRET else "whsec_MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0"
 
     payload = {
         "type": "organizationMembership.deleted",

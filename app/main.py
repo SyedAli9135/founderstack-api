@@ -6,6 +6,7 @@ import logging
 from app.api.v1.health import router as health_router
 from app.api.webhooks.clerk import router as clerk_webhook_router
 from app.api.v1.endpoints.identity import router as identity_router
+from app.api.v1.endpoints.settings import router as settings_router
 from app.config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -40,3 +41,4 @@ app.add_middleware(
 app.include_router(health_router, prefix="/api/v1")
 app.include_router(clerk_webhook_router, prefix="/api/webhooks", tags=["Webhooks"])
 app.include_router(identity_router, prefix="/api/v1/auth", tags=["Identity"])
+app.include_router(settings_router, prefix="/api/v1/settings", tags=["Settings"])

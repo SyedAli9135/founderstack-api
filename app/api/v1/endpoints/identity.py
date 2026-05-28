@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from app.core.auth import get_current_user, get_current_org
 from app.models import User, Organization
+from app.config import settings
 from pydantic import BaseModel
 from typing import Optional
 import uuid
+import jwt
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter()
 
@@ -48,3 +51,35 @@ async def get_me(
             "plan_tier": org.plan_tier,
         }
     }
+
+class DevTokenRequest(BaseModel):
+    clerk_user_id: str
+    extra_claims: Optional[dict] = None
+
+@router.post("/dev-token", tags=["System"])
+async def generate_dev_token(payload: DevTokenRequest):
+    """
+    Utility endpoint to generate a mock JWT for local development/testing.
+    STRICTLY DISABLED IN PRODUCTION.
+    """
+    if settings.APP_ENV == "production":
+        raise HTTPException(
+            status_code=403, 
+            detail="Developer token generation is disabled in production."
+        )
+    
+    # Standard claims
+    claims = {
+        "sub": payload.clerk_user_id,
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=30),
+        "iat": datetime.now(timezone.utc)
+    }
+    
+    # Merge extra claims if provided
+    if payload.extra_claims:
+        claims.update(payload.extra_claims)
+    
+    # Generate a JWT that matches our auth.py decode logic (options={"verify_signature": False})
+    token = jwt.encode(claims, "dummy_secret", algorithm="HS256")
+    
+    return {"token": token, "expires_in": "30 minutes"}

@@ -1,5 +1,7 @@
 import pytest
 import asyncio
+import uuid
+import jwt
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.models.base import Base
@@ -52,3 +54,39 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     
     # Clear overrides after the test is complete
     app.dependency_overrides.clear()
+
+@pytest.fixture
+async def setup_user_org(db_session: AsyncSession):
+    """Setup a test user and organization in the DB."""
+    from app.models.identity import User, Organization
+    from sqlalchemy import insert
+
+    org_id = uuid.uuid4()
+    await db_session.execute(
+        insert(Organization).values(
+            id=org_id,
+            name="Testing HQ",
+            slug="testing-hq",
+            clerk_org_id="org_auth_123"
+        )
+    )
+    
+    user_id = uuid.uuid4()
+    await db_session.execute(
+        insert(User).values(
+            id=user_id,
+            org_id=org_id,
+            clerk_user_id="user_auth_123",
+            email="tester@founderstack.ai",
+            full_name="Tester McTest",
+            role="admin"
+        )
+    )
+    await db_session.commit()
+    return {"user_id": user_id, "org_id": org_id, "clerk_user_id": "user_auth_123"}
+
+@pytest.fixture
+def auth_headers(setup_user_org):
+    """Provide authentication headers with a valid JWT for the test user."""
+    token = jwt.encode({"sub": setup_user_org["clerk_user_id"]}, "dummy_secret", algorithm="HS256")
+    return {"Authorization": f"Bearer {token}"}
