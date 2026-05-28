@@ -99,3 +99,31 @@ async def test_settings_unauthorized(client: AsyncClient):
     # Test status without auth
     response = await client.get("/api/v1/settings/api-key/status")
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_delete_api_key(client: AsyncClient, auth_headers, db_session, setup_user_org):
+    """Test that DELETE /api-key correctly deactivates the key."""
+    # 1. Setup a valid key first
+    payload = {"api_key": f"{settings.ANTHROPIC_API_KEY_MOCK_PREFIX}to-delete"}
+    await client.post("/api/v1/settings/api-key", json=payload, headers=auth_headers)
+
+    # 2. Delete it
+    response = await client.delete("/api/v1/settings/api-key", headers=auth_headers)
+    assert response.status_code == 204
+
+    # 3. Verify status reflects invalid key
+    status_response = await client.get("/api/v1/settings/api-key/status", headers=auth_headers)
+    assert status_response.status_code == 200
+    data = status_response.json()
+    assert data["is_valid"] is False
+
+    # 4. Verify DB state manually
+    res = await db_session.execute(
+        select(ApiKeyRegistry).where(
+            ApiKeyRegistry.org_id == setup_user_org["org_id"],
+            ApiKeyRegistry.provider == "anthropic"
+        )
+    )
+    key = res.scalar_one()
+    assert key.is_valid is False

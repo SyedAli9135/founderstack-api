@@ -10,6 +10,7 @@ from app.models.identity import User, Organization
 from app.models.integration import ApiKeyRegistry
 from app.services.anthropic_service import validate_anthropic_key
 from app.core.security import encrypt_secret
+from app.core.llm import invalidate_llm_cache
 import uuid
 
 router = APIRouter()
@@ -89,6 +90,7 @@ async def submit_api_key(
     await db.execute(org_update_stmt)
 
     await db.commit()
+    invalidate_llm_cache(current_user.org_id)
 
     return {"status": "success", "message": "API key secured and validated."}
 
@@ -114,3 +116,32 @@ async def get_api_key_status(
         is_valid=key.is_valid,
         key_prefix=key.key_prefix
     )
+
+@router.delete("/api-key", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_api_key(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Deactivates the organization's Anthropic API key.
+    """
+    # 1. Update Key Registry
+    await db.execute(
+        update(ApiKeyRegistry)
+        .where(ApiKeyRegistry.org_id == current_user.org_id)
+        .where(ApiKeyRegistry.provider == "anthropic")
+        .values(is_valid=False)
+    )
+
+    # 2. Update Organization
+    await db.execute(
+        update(Organization)
+        .where(Organization.id == current_user.org_id)
+        .values(active_api_key_id=None)
+    )
+
+    # 3. Invalidate cache
+    invalidate_llm_cache(current_user.org_id)
+
+    await db.commit()
+    return None
