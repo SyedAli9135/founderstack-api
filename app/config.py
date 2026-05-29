@@ -1,6 +1,7 @@
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_BASE_URL: str = "http://localhost:8000"
@@ -15,7 +16,7 @@ class Settings(BaseSettings):
     CLERK_WEBHOOK_SECRET: SecretStr
 
     # LLM / AI
-    PINECONE_API_KEY: SecretStr = SecretStr("")
+    PINECONE_API_KEY: SecretStr
     PINECONE_INDEX_RAG: str = "founderstack-rag"
     PINECONE_INDEX_TOOLS: str = "founderstack-tools"
 
@@ -32,5 +33,6 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+
 
 settings = Settings()

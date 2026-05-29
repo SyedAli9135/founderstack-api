@@ -43,7 +43,7 @@ async def test_submit_invalid_api_key(client: AsyncClient, auth_headers):
     )
     
     assert response.status_code == 400
-    assert "Invalid Anthropic API key" in response.json()["detail"]
+    assert "The provided Anthropic API key is invalid" in response.json()["error"]["message"]
 
 @pytest.mark.asyncio
 async def test_get_api_key_status(client: AsyncClient, auth_headers):
@@ -59,7 +59,9 @@ async def test_get_api_key_status(client: AsyncClient, auth_headers):
     response = await client.get("/api/v1/settings/api-key/status", headers=auth_headers)
     
     assert response.status_code == 200
-    data = response.json()
+    json_resp = response.json()
+    assert json_resp["status"] == "success"
+    data = json_resp["data"]
     assert data["provider"] == "anthropic"
     assert data["is_valid"] is True
     assert data["key_prefix"].startswith("sk-ant-")
@@ -115,7 +117,9 @@ async def test_delete_api_key(client: AsyncClient, auth_headers, db_session, set
     # 3. Verify status reflects invalid key
     status_response = await client.get("/api/v1/settings/api-key/status", headers=auth_headers)
     assert status_response.status_code == 200
-    data = status_response.json()
+    json_resp = status_response.json()
+    assert json_resp["status"] == "success"
+    data = json_resp["data"]
     assert data["is_valid"] is False
 
     # 4. Verify DB state manually

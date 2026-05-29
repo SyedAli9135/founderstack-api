@@ -41,7 +41,9 @@ async def test_get_me_authenticated(client, db_session):
     
     # 4. Verification
     assert response.status_code == 200
-    data = response.json()
+    json_resp = response.json()
+    assert json_resp["status"] == "success"
+    data = json_resp["data"]
     assert data["user"]["email"] == "tester@founderstack.ai"
     assert data["user"]["role"] == "admin"
     assert data["organization"]["slug"] == "testing-hq"
@@ -61,4 +63,4 @@ async def test_get_me_user_not_found(client):
     response = await client.get("/api/v1/auth/me", headers=headers)
     
     assert response.status_code == 401
-    assert "User profile not synchronized" in response.json()["detail"]
+    assert "User profile not synchronized" in response.json()["error"]["message"]

@@ -38,12 +38,12 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 
     # 3. Test Pinecone Connection
     try:
-        if not settings.PINECONE_API_KEY:
+        if not settings.PINECONE_API_KEY.get_secret_value():
             checks["pinecone"] = "skipped (no API key in .env)"
         else:
             loop = asyncio.get_event_loop()
             def test_pinecone():
-                pc = Pinecone(api_key=settings.PINECONE_API_KEY)
+                pc = Pinecone(api_key=settings.PINECONE_API_KEY.get_secret_value())
                 pc.list_indexes()
             await loop.run_in_executor(None, test_pinecone)
             checks["pinecone"] = "healthy"

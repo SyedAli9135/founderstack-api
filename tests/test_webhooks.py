@@ -37,7 +37,9 @@ async def test_clerk_webhook_org_created(client, db_session):
     response = await client.post("/api/webhooks/clerk", content=payload_str, headers=headers)
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    json_resp = response.json()
+    assert json_resp["status"] == "success"
+    assert json_resp["message"] == "Webhook processed successfully."
 
     # Verify the organization was actually created in the test DB
     stmt = select(Organization).where(
@@ -83,7 +85,7 @@ async def test_clerk_webhook_race_condition(client):
 
     # Our refined logic should return 422 to trigger a Clerk retry
     assert response.status_code == 422
-    assert "Organization not found yet" in response.json()["detail"]
+    assert "Organization not found yet" in response.json()["error"]["message"]
 
 
 @pytest.mark.asyncio
@@ -102,7 +104,7 @@ async def test_clerk_webhook_invalid_signature(client, monkeypatch):
     response = await client.post("/api/webhooks/clerk", content=payload_str, headers=headers)
 
     assert response.status_code == 400
-    assert "Invalid signature" in response.json()["detail"]
+    assert "Invalid signature" in response.json()["error"]["message"]
 
 
 @pytest.mark.asyncio

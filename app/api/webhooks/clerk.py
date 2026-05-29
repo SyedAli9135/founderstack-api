@@ -6,6 +6,7 @@ from sqlalchemy import select
 from app.config import settings
 from app.core.database import get_db
 from app.models import Organization, User
+from app.api.v1.schemas.base import SuccessEnvelope
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,9 +24,9 @@ async def clerk_webhook(
     """
     wh_secret = settings.CLERK_WEBHOOK_SECRET.get_secret_value()
     if not wh_secret:
-        logger.error("CLERK_WEBHOOK_SECRET is not set")
+        logger.error("CLERK_WEBHOOK_SECRET is not set in environment or settings")
         raise HTTPException(
-            status_code=500, detail="Webhook secret not configured")
+            status_code=500, detail="The authentication service is misconfigured. Please contact support.")
 
     headers = request.headers
     payload = await request.body()
@@ -70,10 +71,12 @@ async def clerk_webhook(
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception(f"Error processing Clerk webhook {event_type}: {e}")
-        raise HTTPException(status_code=500, detail="Error processing webhook")
+        # The global exception handler will mask the details, but we log everything here
+        logger.error(f"Critical error processing Clerk webhook {event_type} [Data: {event_data}]: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"An unexpected error occurred while processing the {event_type} event.")
 
-    return {"status": "ok"}
+    return SuccessEnvelope(message="Webhook processed successfully.")
 
 
 async def handle_org_created(data, db: AsyncSession):

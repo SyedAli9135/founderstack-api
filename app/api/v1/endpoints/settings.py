@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import update, select
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Any
+from app.api.v1.schemas.base import SuccessEnvelope
+import logging
 
 from app.core.database import get_db
 from app.core.auth import get_current_user
@@ -14,6 +16,7 @@ from app.core.llm import invalidate_llm_cache
 import uuid
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class ApiKeySubmit(BaseModel):
@@ -39,12 +42,20 @@ async def submit_api_key(
     - Stores in ApiKeyRegistry.
     - Updates Organization state.
     """
-    # 1. Validate the key
-    is_valid = await validate_anthropic_key(payload.api_key)
+    # 1. Validate the key (Dual-path: Mock vs Real SDK)
+    try:
+        is_valid = await validate_anthropic_key(payload.api_key)
+    except Exception as e:
+        logger.error(f"Error during key validation: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="The validation service encountered an error. Please try again later."
+        )
+
     if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid Anthropic API key. Please check your key and try again."
+            detail="The provided Anthropic API key is invalid or inactive. Please ensure it starts with 'sk-ant-' and has active usage permissions."
         )
 
     # 2. Encrypt the key
@@ -92,10 +103,16 @@ async def submit_api_key(
     await db.commit()
     invalidate_llm_cache(current_user.org_id)
 
-    return {"status": "success", "message": "API key secured and validated."}
+    return SuccessEnvelope(
+        message="Anthropic API key has been securely encrypted and validated. Your workspace is now active.",
+        data={
+            "provider": "anthropic",
+            "key_prefix": key_prefix
+        }
+    )
 
 
-@router.get("/api-key/status", response_model=Optional[ApiKeyStatusDetails])
+@router.get("/api-key/status", response_model=SuccessEnvelope[Optional[ApiKeyStatusDetails]])
 async def get_api_key_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -109,13 +126,14 @@ async def get_api_key_status(
     key = result.scalar_one_or_none()
 
     if not key:
-        return None
+        return SuccessEnvelope(data=None)
 
-    return ApiKeyStatusDetails(
+    data = ApiKeyStatusDetails(
         provider=key.provider,
         is_valid=key.is_valid,
         key_prefix=key.key_prefix
     )
+    return SuccessEnvelope(data=data)
 
 @router.delete("/api-key", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_api_key(
