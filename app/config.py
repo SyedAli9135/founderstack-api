@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     CLERK_PUBLISHABLE_KEY: str
     CLERK_WEBHOOK_SECRET: SecretStr
 
+    # LocalStack
+    LOCALSTACK_AUTH_TOKEN: SecretStr
+
     # LLM / AI
     PINECONE_API_KEY: SecretStr
     PINECONE_INDEX_RAG: str = "founderstack-rag"

@@ -22,3 +22,4 @@ class ApiKeyRegistry(Base):
     encrypted_key = Column(String(500), nullable=False)
     kms_key_id = Column(String(255), nullable=False)
     is_valid = Column(Boolean, default=True)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)

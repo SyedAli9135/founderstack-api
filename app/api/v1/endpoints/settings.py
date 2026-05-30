@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import update, select
 from pydantic import BaseModel
 from typing import Optional, Any
+from datetime import datetime
 from app.api.v1.schemas.base import SuccessEnvelope
 import logging
 
@@ -27,6 +28,8 @@ class ApiKeyStatusDetails(BaseModel):
     provider: str
     is_valid: bool
     key_prefix: str
+    updated_at: Optional[datetime] = None
+    last_used_at: Optional[datetime] = None
 
 
 @router.post("/api-key", status_code=status.HTTP_201_CREATED)
@@ -131,7 +134,9 @@ async def get_api_key_status(
     data = ApiKeyStatusDetails(
         provider=key.provider,
         is_valid=key.is_valid,
-        key_prefix=key.key_prefix
+        key_prefix=key.key_prefix,
+        updated_at=key.updated_at,
+        last_used_at=key.last_used_at
     )
     return SuccessEnvelope(data=data)
 
