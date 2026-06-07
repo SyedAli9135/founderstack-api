@@ -81,3 +81,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content=error_response.model_dump()
     )
+
+class ToolAuthExpiredError(StarletteHTTPException):
+    def __init__(self, service: str):
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Integration '{service}' is not connected or the token has expired. Please reconnect in settings."
+        )

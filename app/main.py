@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
@@ -10,6 +11,7 @@ from app.api.v1.health import router as health_router
 from app.api.webhooks.clerk import router as clerk_webhook_router
 from app.api.v1.endpoints.identity import router as identity_router
 from app.api.v1.endpoints.settings import router as settings_router
+from app.api.v1.endpoints.integrations import router as integrations_router
 from app.api.middleware import RequestIDMiddleware
 from app.core.exceptions import (
     global_exception_handler,
@@ -21,12 +23,16 @@ from app.config import settings
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from app.core.integrations.refresh_job import start_refresh_job
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up FounderStack API...")
-    # System dependencies like DB pooling are automatically managed natively 
-    # via the SQLAlchemy AsyncEngine instance in core/database.py on startup.
+    # Start OAuth token refresh background task
+    refresh_task = asyncio.create_task(start_refresh_job())
     yield
+    # Cleanup
+    refresh_task.cancel()
     logger.info("Shutting down FounderStack API...")
 
 app = FastAPI(
@@ -66,3 +72,4 @@ app.include_router(health_router, prefix="/api/v1")
 app.include_router(clerk_webhook_router, prefix="/api/webhooks", tags=["Webhooks"])
 app.include_router(identity_router, prefix="/api/v1/auth", tags=["Identity"])
 app.include_router(settings_router, prefix="/api/v1/settings", tags=["Settings"])
+app.include_router(integrations_router, prefix="/api/v1/integrations", tags=["Integrations"])

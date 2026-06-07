@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_BASE_URL: str = "http://localhost:8000"
+    FRONTEND_URL: str = "http://localhost:3000"
 
     # DB
     DATABASE_URL: str
@@ -17,6 +18,22 @@ class Settings(BaseSettings):
 
     # LocalStack
     LOCALSTACK_AUTH_TOKEN: SecretStr
+
+    # OAuth
+    SLACK_CLIENT_ID: str = ""
+    SLACK_CLIENT_SECRET: SecretStr = SecretStr("")
+
+    NOTION_CLIENT_ID: str = ""
+    NOTION_CLIENT_SECRET: SecretStr = SecretStr("")
+
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: SecretStr = SecretStr("")
+
+    TWITTER_CLIENT_ID: str = ""
+    TWITTER_SECRET_KEY: SecretStr = SecretStr("")
+
+    LINKEDIN_CLIENT_ID: str = ""
+    LINKEDIN_CLIENT_SECRET: SecretStr = SecretStr("")
 
     # LLM / AI
     PINECONE_API_KEY: SecretStr
@@ -32,6 +49,7 @@ class Settings(BaseSettings):
 
     # Security
     ENCRYPTION_KEY: SecretStr
+    OAUTH_STATE_SECRET: SecretStr
     ANTHROPIC_API_KEY_MOCK_PREFIX: str = "sk-ant-test-"
 
     class Config:
