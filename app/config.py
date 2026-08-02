@@ -47,6 +47,13 @@ class Settings(BaseSettings):
     COHERE_API_KEY: SecretStr = SecretStr("")
     AWS_REGION: str = "us-east-1"
 
+    # Document storage (S3 / LocalStack)
+    S3_BUCKET_DOCUMENTS: str = "founderstack-documents"
+    AWS_ACCESS_KEY_ID: str = "test"
+    AWS_SECRET_ACCESS_KEY: SecretStr = SecretStr("test")
+    # Set to http://localhost:4566 for local LocalStack; leave empty to hit real AWS
+    AWS_S3_ENDPOINT_URL: str = ""
+
     # Security
     ENCRYPTION_KEY: SecretStr
     OAUTH_STATE_SECRET: SecretStr

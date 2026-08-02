@@ -10,7 +10,11 @@ class Document(Base):
     s3_path = Column(String, nullable=False)
     mime_type = Column(String(100))
     byte_size = Column(Integer)
+    category = Column(String(50), default='general')
     processing_status = Column(String(50), default='pending')
+    total_chunks = Column(Integer, default=0)
+    indexed_at = Column(DateTime(timezone=True))
+    error_detail = Column(String)
     vector_id = Column(String)
     uploaded_by = Column(UUID(as_uuid=True), ForeignKey('users.id'))
 

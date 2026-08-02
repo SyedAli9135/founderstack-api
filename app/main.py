@@ -12,6 +12,7 @@ from app.api.webhooks.clerk import router as clerk_webhook_router
 from app.api.v1.endpoints.identity import router as identity_router
 from app.api.v1.endpoints.settings import router as settings_router
 from app.api.v1.endpoints.integrations import router as integrations_router
+from app.api.v1.endpoints.documents import router as documents_router
 from app.api.middleware import RequestIDMiddleware
 from app.core.exceptions import (
     global_exception_handler,
@@ -73,3 +74,4 @@ app.include_router(clerk_webhook_router, prefix="/api/webhooks", tags=["Webhooks
 app.include_router(identity_router, prefix="/api/v1/auth", tags=["Identity"])
 app.include_router(settings_router, prefix="/api/v1/settings", tags=["Settings"])
 app.include_router(integrations_router, prefix="/api/v1/integrations", tags=["Integrations"])
+app.include_router(documents_router, prefix="/api/v1/documents", tags=["Documents"])

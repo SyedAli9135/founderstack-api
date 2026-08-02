@@ -105,6 +105,8 @@ Model files by domain:
 | `/api/v1/health` | `app/api/v1/health.py` | DB + Redis + Pinecone liveness |
 | `/api/v1/auth` | `app/api/v1/endpoints/identity.py` | `/me`, `/dev-token` |
 | `/api/v1/settings` | `app/api/v1/endpoints/settings.py` | API key CRUD |
+| `/api/v1/integrations` | `app/api/v1/endpoints/integrations.py` | OAuth/API-key integration connect, callback, status, disconnect |
+| `/api/v1/documents` | `app/api/v1/endpoints/documents.py` | Document upload (RAG ingestion), list, detail, delete, reindex |
 | `/api/webhooks/clerk` | `app/api/webhooks/clerk.py` | Clerk event sync |
 
 ### Dev Token
@@ -125,7 +127,7 @@ ENCRYPTION_KEY=...          # Fernet key (generate: python -c "from cryptography
 PINECONE_API_KEY=...
 ```
 
-Optional: `UPSTASH_REDIS_URL`, `UPSTASH_REDIS_TOKEN`, `NANGO_SECRET_KEY`, `COHERE_API_KEY`, `AWS_REGION`.
+Optional: `UPSTASH_REDIS_URL`, `UPSTASH_REDIS_TOKEN`, `NANGO_SECRET_KEY`, `COHERE_API_KEY`, `AWS_REGION`, `S3_BUCKET_DOCUMENTS`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_ENDPOINT_URL` (point at `http://localhost:4566` for the local LocalStack container; leave empty for real AWS).
 
 ## Adding a New Feature
 
